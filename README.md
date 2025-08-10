@@ -19,4 +19,4 @@ Simply open the index.html file in any modern web browser to use the application
 
 ## GitHub Pages
 
-This application is hosted on GitHub Pages at: [YOUR_USERNAME.github.io/mnemonica-trainer](https://YOUR_USERNAME.github.io/mnemonica-trainer)
+This application is hosted on GitHub Pages at: [nathanmwu.github.io/mnemonica-trainer](https://nathanmwu.github.io/mnemonica-trainer)
