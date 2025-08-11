@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mnemonica Stack Trainer</title>
     <style>
         * {
@@ -552,6 +552,176 @@
 
         .hidden {
             display: none !important;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                max-width: 100%;
+            }
+
+            .header h1 {
+                font-size: 24px;
+                margin-bottom: 15px;
+            }
+
+            .nav-buttons {
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
+
+            .nav-btn {
+                flex: 1 1 calc(50% - 4px);
+                min-width: 120px;
+                padding: 10px 8px;
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .card-display {
+                padding: 20px;
+                min-height: 150px;
+                margin-bottom: 15px;
+            }
+
+            .position-number {
+                font-size: 48px;
+            }
+
+            .card-name {
+                font-size: 36px;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .control-btn {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            .settings {
+                padding: 15px;
+            }
+
+            .setting-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .selection-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+
+            .selection-card {
+                min-height: 50px;
+                padding: 6px;
+            }
+
+            .selection-card .card-value {
+                font-size: 14px;
+            }
+
+            .selection-card .card-pos {
+                font-size: 10px;
+            }
+
+            .input-grid {
+                gap: 8px;
+            }
+
+            .input-btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .number-text-input {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            .score-content {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .score-header h2 {
+                font-size: 20px;
+            }
+
+            .score-main {
+                font-size: 24px;
+            }
+
+            .score-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .score-actions .control-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 8px;
+            }
+
+            .nav-buttons {
+                gap: 6px;
+            }
+
+            .nav-btn {
+                flex: 1 1 calc(50% - 3px);
+                min-width: 100px;
+                padding: 8px 6px;
+                font-size: 13px;
+            }
+
+            .card-display {
+                padding: 15px;
+                min-height: 120px;
+            }
+
+            .position-number {
+                font-size: 36px;
+            }
+
+            .card-name {
+                font-size: 28px;
+            }
+
+            .selection-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+
+            .selection-card {
+                min-height: 45px;
+                padding: 4px;
+            }
+
+            .selection-card .card-value {
+                font-size: 12px;
+            }
+
+            .input-grid {
+                gap: 6px;
+            }
+
+            .input-btn {
+                padding: 8px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
