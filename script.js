@@ -240,21 +240,21 @@ function showPracticeQuestion() {
     // Start timing for this question
     questionStartTime = Date.now();
     
-    // Clear previous inputs and selections
+    // Clear previous inputs and selections FIRST
+    selectedRank = '';
+    selectedSuit = '';
     document.getElementById('numberTextInput').value = '';
     document.getElementById('cardDisplay').textContent = '';
     document.getElementById('cardDisplay').innerHTML = '';
-    clearCardSelections();
-    selectedRank = '';
-    selectedSuit = '';
     
-    // Force clear any lingering button states
+    // Force clear any lingering button states immediately
     document.querySelectorAll('.rank-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
     document.querySelectorAll('.suit-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
+    clearCardSelections();
     
     document.getElementById('feedback').style.display = 'none';
     
@@ -339,6 +339,19 @@ function submitAnswer() {
     
     if (correct) {
         stats.correct++;
+    }
+    
+    // Clear card input state before advancing
+    selectedRank = '';
+    selectedSuit = '';
+    document.getElementById('cardDisplay').textContent = '';
+    document.getElementById('cardDisplay').innerHTML = '';
+    
+    // Force clear button states multiple times to ensure they stick
+    for (let i = 0; i < 3; i++) {
+        document.querySelectorAll('.rank-btn, .suit-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
     }
     
     // Advance immediately to next question
@@ -584,28 +597,59 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Enter key support for card input mode
-    document.addEventListener('keypress', (e) => {
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !document.getElementById('cardInput').classList.contains('hidden')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            // Blur any focused button to prevent Enter from triggering it
+            if (document.activeElement && document.activeElement.classList.contains('suit-btn')) {
+                document.activeElement.blur();
+            }
             submitAnswer();
         }
     });
 
     // Card input buttons
     document.querySelectorAll('.rank-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             document.querySelectorAll('.rank-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedRank = btn.dataset.rank;
             updateCardDisplay();
         });
+        
+        // Allow Enter key to submit answer instead of triggering button click
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                // Submit answer instead of clicking the button
+                submitAnswer();
+            }
+        });
     });
 
     document.querySelectorAll('.suit-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             document.querySelectorAll('.suit-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedSuit = btn.dataset.suit;
             updateCardDisplay();
+        });
+        
+        // Allow Enter key to submit answer instead of triggering button click
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                // Submit answer instead of clicking the button
+                submitAnswer();
+            }
         });
     });
 
