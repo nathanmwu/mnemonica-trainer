@@ -648,8 +648,15 @@ input:checked + .slider:before {
     }
 
     .input-btn {
-        padding: 10px;
-        font-size: 14px;
+        padding: 12px 8px;
+        font-size: 28px;
+        font-weight: bold;
+        min-height: 56px;
+        min-width: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1;
     }
 
     .number-text-input {
@@ -728,7 +735,14 @@ input:checked + .slider:before {
     }
 
     .input-btn {
-        padding: 8px;
-        font-size: 12px;
+        padding: 10px 6px;
+        font-size: 28px;
+        font-weight: bold;
+        min-height: 52px;
+        min-width: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1;
     }
 }
