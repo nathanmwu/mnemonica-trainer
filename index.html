@@ -550,6 +550,71 @@
             color: #38a169;
         }
 
+        .timing-section {
+            margin: 25px 0;
+        }
+
+        .timing-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .timing-stats {
+            background: #f0f8ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .timing-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .timing-stat:last-child {
+            margin-bottom: 0;
+        }
+
+        .timing-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .timing-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .slowest-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .slowest-item {
+            background: #fff8dc;
+            border: 1px solid #f0e68c;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slowest-card {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .slowest-time {
+            color: #b8860b;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -833,7 +898,7 @@
                         <button class="input-btn suit-btn black" data-suit="♣">♣</button>
                         <button class="input-btn suit-btn black" data-suit="♠">♠</button>
                     </div>
-                    <div style="text-align: center; margin-top: 10px;">
+                    <div style="text-align: center; margin-top: 10px; height: 60px; display: flex; align-items: center; justify-content: center;">
                         <span style="font-size: 36px; font-weight: bold;" id="cardDisplay"></span>
                     </div>
                     <div style="text-align: center; margin-top: 15px;">
@@ -861,6 +926,9 @@
                         <div class="score-time">
                             Time: <span id="sessionTime">00:00</span>
                         </div>
+                        <div class="score-time">
+                            Average Recall: <span id="avgResponseTime">0.0s</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -868,6 +936,13 @@
                     <h3>Incorrect Answers:</h3>
                     <div id="incorrectList" class="incorrect-list">
                         <!-- Incorrect answers will be populated here -->
+                    </div>
+                </div>
+                
+                <div id="slowestAnswers" class="timing-section" style="display: none;">
+                    <h3>Slowest Cards:</h3>
+                    <div id="slowestList" class="slowest-list">
+                        <!-- Slowest answers will be populated here -->
                     </div>
                 </div>
                 
@@ -964,6 +1039,7 @@
         let sessionResults = [];
         let sessionCorrect = 0;
         let sessionTotal = 0;
+        let questionStartTime = null;
         let stats = {sessions: 0, bestTime: null, totalTime: 0, correct: 0, attempts: 0};
         
         // Card selection variables
@@ -1269,6 +1345,9 @@
             const question = document.getElementById('practiceQuestion');
             awaitingAnswer = true;
             
+            // Start timing for this question
+            questionStartTime = Date.now();
+            
             // Clear previous inputs and selections
             document.getElementById('numberTextInput').value = '';
             document.getElementById('cardDisplay').textContent = '';
@@ -1333,6 +1412,9 @@
                 correct = userAnswer === current.card && selectedRank && selectedSuit;
             }
             
+            // Calculate response time
+            const responseTime = questionStartTime ? Date.now() - questionStartTime : 0;
+            
             // Track session results
             sessionTotal++;
             const result = {
@@ -1342,7 +1424,8 @@
                 correctAnswer,
                 correct,
                 card: current.card,
-                position: current.pos
+                position: current.pos,
+                responseTime
             };
             sessionResults.push(result);
             
@@ -1393,6 +1476,9 @@
                 displayAnswer = `The card is ${current.card}`;
             }
             
+            // Calculate response time
+            const responseTime = questionStartTime ? Date.now() - questionStartTime : 0;
+            
             // Track session results (user skipped/showed answer)
             sessionTotal++;
             const result = {
@@ -1402,7 +1488,8 @@
                 correctAnswer,
                 correct: false,
                 card: current.card,
-                position: current.pos
+                position: current.pos,
+                responseTime
             };
             sessionResults.push(result);
             
@@ -1572,6 +1659,56 @@
                     
                     incorrectList.appendChild(item);
                 });
+            }
+            
+            // Calculate and display timing analysis
+            const responseTimes = sessionResults.filter(result => result.responseTime > 0).map(result => result.responseTime);
+            
+            if (responseTimes.length > 0) {
+                const avgTime = responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length;
+                document.getElementById('avgResponseTime').textContent = `${(avgTime / 1000).toFixed(1)}s`;
+                
+                // Show slowest answers for targeted practice (top 5 or all if less than 5)
+                const slowestAnswers = sessionResults
+                    .filter(result => result.responseTime > 0)
+                    .sort((a, b) => b.responseTime - a.responseTime)
+                    .slice(0, Math.min(5, sessionResults.length));
+                
+                const slowestList = document.getElementById('slowestList');
+                const slowestSection = document.getElementById('slowestAnswers');
+                
+                if (slowestAnswers.length > 1) { // Only show if there are multiple answers to compare
+                    slowestSection.style.display = 'block';
+                    slowestList.innerHTML = '';
+                    
+                    slowestAnswers.forEach((result, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'slowest-item';
+                        
+                        const cardInfo = result.questionType === 'numberFromCard' 
+                            ? `${result.card} → Position ${result.position}`
+                            : `Position ${result.position} → ${result.card}`;
+                        
+                        const statusIcon = result.correct ? '✓' : (result.userAnswer.includes('Skipped') ? '⏭' : '✗');
+                        const statusColor = result.correct ? '#38a169' : (result.userAnswer.includes('Skipped') ? '#667eea' : '#e53e3e');
+                        
+                        item.innerHTML = `
+                            <div class="slowest-card">
+                                <span style="color: ${statusColor}; margin-right: 8px;">${statusIcon}</span>
+                                ${cardInfo}
+                            </div>
+                            <div class="slowest-time">${(result.responseTime / 1000).toFixed(1)}s</div>
+                        `;
+                        
+                        slowestList.appendChild(item);
+                    });
+                } else {
+                    slowestSection.style.display = 'none';
+                }
+            } else {
+                // No timing data available
+                document.getElementById('avgResponseTime').textContent = 'N/A';
+                document.getElementById('slowestAnswers').style.display = 'none';
             }
             
             // Show the modal
