@@ -212,8 +212,15 @@ function startPractice() {
     // Get practice type
     currentPracticeType = document.getElementById('practiceType').value;
     
-    // Create practice order from available cards
-    practiceOrder = shuffleArray(availableCards);
+    // Create practice order based on practice type
+    if (currentPracticeType === 'positionFromComplement') {
+        // For complement mode, create array of numbers 1-51 in random order
+        const complementNumbers = Array.from({length: 51}, (_, i) => i + 1);
+        practiceOrder = shuffleArray(complementNumbers);
+    } else {
+        // For other modes, use available cards
+        practiceOrder = shuffleArray(availableCards);
+    }
     
     // Hide start screen, show practice session
     document.getElementById('practiceStart').classList.add('hidden');
@@ -282,11 +289,11 @@ function showPracticeQuestion() {
     
     if (askForNumber) {
         if (isComplement) {
-            // For complement mode, show a random number and ask for its complement
-            const randomNumber = Math.floor(Math.random() * 51) + 1;
-            question.innerHTML = `<div class="position-number">${randomNumber}</div>`;
-            // Store the random number for answer checking
-            current.complementNumber = randomNumber;
+            // For complement mode, use the current number from practiceOrder
+            const complementNumber = practiceOrder[practiceIndex];
+            question.innerHTML = `<div class="position-number">${complementNumber}</div>`;
+            // Store the complement number for answer checking
+            current.complementNumber = complementNumber;
         } else {
             question.innerHTML = formatCard(current.card);
         }
