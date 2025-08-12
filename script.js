@@ -198,7 +198,11 @@ function flipCard() {
 
 // Practice Mode Functions
 function startPractice() {
-    if (availableCards.length === 0) {
+    // Get practice type first to check if it's ACAAN
+    const practiceType = document.getElementById('practiceType').value;
+    
+    // Only require card selection for non-ACAAN modes
+    if (practiceType !== 'acaan' && availableCards.length === 0) {
         alert('Please select at least one card to practice with.');
         return;
     }
@@ -213,10 +217,15 @@ function startPractice() {
     currentPracticeType = document.getElementById('practiceType').value;
     
     // Create practice order based on practice type
-    if (currentPracticeType === 'positionFromComplement') {
-        // For complement mode, create array of numbers 1-51 in random order
-        const complementNumbers = Array.from({length: 51}, (_, i) => i + 1);
-        practiceOrder = shuffleArray(complementNumbers);
+    if (currentPracticeType === 'acaan') {
+        // For ACAAN mode, create array of 10 random card/number pairs
+        const acaanPairs = [];
+        for (let i = 0; i < 10; i++) {
+            const randomCard = Math.floor(Math.random() * 52);
+            const randomNumber = Math.floor(Math.random() * 52) + 1;
+            acaanPairs.push({ cardIndex: randomCard, number: randomNumber });
+        }
+        practiceOrder = acaanPairs;
     } else {
         // For other modes, use available cards
         practiceOrder = shuffleArray(availableCards);
@@ -240,7 +249,14 @@ function showPracticeQuestion() {
         return;
     }
     
-    const current = mnemonica[practiceOrder[practiceIndex]];
+    // Get current item based on practice type
+    let current;
+    if (currentPracticeType === 'acaan') {
+        current = { acaanData: practiceOrder[practiceIndex] };
+    } else {
+        current = mnemonica[practiceOrder[practiceIndex]];
+    }
+    
     const question = document.getElementById('practiceQuestion');
     awaitingAnswer = true;
     
@@ -267,41 +283,40 @@ function showPracticeQuestion() {
     
     // Determine question type based on practice mode
     let askForNumber;
-    let isComplement = false;
+    let isAcaan = false;
     if (currentPracticeType === 'numberFromCard') {
         askForNumber = true;
     } else if (currentPracticeType === 'cardFromNumber') {
         askForNumber = false;
-    } else if (currentPracticeType === 'positionFromComplement') {
-        askForNumber = true;
-        isComplement = true;
+    } else if (currentPracticeType === 'acaan') {
+        askForNumber = false; // ACAAN asks for a card
+        isAcaan = true;
     } else { // hybrid
-        const randomChoice = Math.random();
-        if (randomChoice < 0.33) {
-            askForNumber = true; // numberFromCard
-        } else if (randomChoice < 0.66) {
-            askForNumber = false; // cardFromNumber
-        } else {
-            askForNumber = true; // positionFromComplement
-            isComplement = true;
-        }
+        askForNumber = Math.random() < 0.5; // 50/50 between numberFromCard and cardFromNumber
     }
     
     if (askForNumber) {
-        if (isComplement) {
-            // For complement mode, use the current number from practiceOrder
-            const complementNumber = practiceOrder[practiceIndex];
-            question.innerHTML = `<div class="position-number">${complementNumber}</div>`;
-            // Store the complement number for answer checking
-            current.complementNumber = complementNumber;
-        } else {
-            question.innerHTML = formatCard(current.card);
-        }
+        question.innerHTML = formatCard(current.card);
         document.getElementById('numberInput').classList.remove('hidden');
         document.getElementById('cardInput').classList.add('hidden');
         document.getElementById('numberTextInput').focus();
     } else {
-        question.innerHTML = `<div class="position-number">${current.pos}</div>`;
+        if (isAcaan) {
+            // For ACAAN mode, show card and number
+            const acaanData = current.acaanData;
+            const shownCard = mnemonica[acaanData.cardIndex];
+            question.innerHTML = `
+                <div class="acaan-question">
+                    <div class="acaan-card">${formatCard(shownCard.card)}</div>
+                    <div class="acaan-number">${acaanData.number}</div>
+                </div>
+            `;
+            // Store ACAAN data for answer checking
+            current.acaanCard = shownCard;
+            current.acaanNumber = acaanData.number;
+        } else {
+            question.innerHTML = `<div class="position-number">${current.pos}</div>`;
+        }
         document.getElementById('numberInput').classList.add('hidden');
         document.getElementById('cardInput').classList.remove('hidden');
     }
@@ -316,7 +331,18 @@ function clearCardSelections() {
 function submitAnswer() {
     if (!awaitingAnswer) return;
     
-    const current = mnemonica[practiceOrder[practiceIndex]];
+    // Get current item based on practice type
+    let current;
+    if (currentPracticeType === 'acaan') {
+        current = { acaanData: practiceOrder[practiceIndex] };
+        // Add ACAAN data for answer checking
+        const acaanData = current.acaanData;
+        const shownCard = mnemonica[acaanData.cardIndex];
+        current.acaanCard = shownCard;
+        current.acaanNumber = acaanData.number;
+    } else {
+        current = mnemonica[practiceOrder[practiceIndex]];
+    }
     let correct = false;
     let userAnswer = '';
     let questionType = '';
@@ -324,30 +350,39 @@ function submitAnswer() {
     let correctAnswer = '';
     
     if (!document.getElementById('numberInput').classList.contains('hidden')) {
-        // Number guessing mode (either numberFromCard or positionFromComplement)
+        // Number guessing mode (numberFromCard)
+        questionType = 'numberFromCard';
+        questionText = `What position is ${current.card}?`;
         const inputValue = parseInt(document.getElementById('numberTextInput').value);
         userAnswer = inputValue ? `${inputValue}` : 'No answer';
-        
-        if (current.complementNumber) {
-            // Position from complement mode
-            questionType = 'positionFromComplement';
-            questionText = `What is the complement of ${current.complementNumber}?`;
-            correctAnswer = `${52 - current.complementNumber}`;
-            correct = inputValue === (52 - current.complementNumber);
-        } else {
-            // Regular number from card mode
-            questionType = 'numberFromCard';
-            questionText = `What position is ${current.card}?`;
-            correctAnswer = `${current.pos}`;
-            correct = inputValue === current.pos;
-        }
+        correctAnswer = `${current.pos}`;
+        correct = inputValue === current.pos;
     } else {
-        // Card guessing mode
-        questionType = 'cardFromNumber';
-        questionText = `What card is ${current.pos}?`;
+        // Card guessing mode (either cardFromNumber or ACAAN)
         userAnswer = (selectedRank && selectedSuit) ? selectedRank + selectedSuit : 'No answer';
-        correctAnswer = current.card;
-        correct = userAnswer === current.card && selectedRank && selectedSuit;
+        
+        if (current.acaanCard && current.acaanNumber) {
+            // ACAAN mode
+            questionType = 'acaan';
+            questionText = `Card ${current.acaanCard.card} at number ${current.acaanNumber}: What card?`;
+            
+            // Calculate target position: (P's position - N), wrap if negative
+            let targetPosition = current.acaanCard.pos - current.acaanNumber;
+            if (targetPosition <= 0) {
+                targetPosition += 52;
+            }
+            
+            // Find the card at the target position
+            const targetCard = mnemonica.find(item => item.pos === targetPosition);
+            correctAnswer = targetCard.card;
+            correct = userAnswer === targetCard.card && selectedRank && selectedSuit;
+        } else {
+            // Regular card from number mode
+            questionType = 'cardFromNumber';
+            questionText = `What card is ${current.pos}?`;
+            correctAnswer = current.card;
+            correct = userAnswer === current.card && selectedRank && selectedSuit;
+        }
     }
     
     // Calculate response time
@@ -400,33 +435,53 @@ function submitAnswer() {
 function showAnswerAndAdvance() {
     if (!awaitingAnswer) return;
     
-    const current = mnemonica[practiceOrder[practiceIndex]];
+    // Get current item based on practice type
+    let current;
+    if (currentPracticeType === 'acaan') {
+        current = { acaanData: practiceOrder[practiceIndex] };
+        // Add ACAAN data for answer checking
+        const acaanData = current.acaanData;
+        const shownCard = mnemonica[acaanData.cardIndex];
+        current.acaanCard = shownCard;
+        current.acaanNumber = acaanData.number;
+    } else {
+        current = mnemonica[practiceOrder[practiceIndex]];
+    }
     let questionType = '';
     let questionText = '';
     let correctAnswer = '';
     let displayAnswer = '';
     
-    // If number input is visible, user is guessing a number (either position or complement)
+    // If number input is visible, user is guessing the position number
     if (!document.getElementById('numberInput').classList.contains('hidden')) {
-        if (current.complementNumber) {
-            // Position from complement mode
-            questionType = 'positionFromComplement';
-            questionText = `What is the complement of ${current.complementNumber}?`;
-            correctAnswer = `${52 - current.complementNumber}`;
-            displayAnswer = `${52 - current.complementNumber}`;
-        } else {
-            // Regular number from card mode
-            questionType = 'numberFromCard';
-            questionText = `What position is ${current.card}?`;
-            correctAnswer = `${current.pos}`;
-            displayAnswer = `${current.pos}`;
-        }
+        questionType = 'numberFromCard';
+        questionText = `What position is ${current.card}?`;
+        correctAnswer = `${current.pos}`;
+        displayAnswer = `${current.pos}`;
     } else {
-        // If card input is visible, user is guessing the card
-        questionType = 'cardFromNumber';
-        questionText = `What card is at position ${current.pos}?`;
-        correctAnswer = current.card;
-        displayAnswer = `${current.card}`;
+        // If card input is visible, user is guessing a card (either cardFromNumber or ACAAN)
+        if (current.acaanCard && current.acaanNumber) {
+            // ACAAN mode
+            questionType = 'acaan';
+            questionText = `Card ${current.acaanCard.card} at number ${current.acaanNumber}: What card?`;
+            
+            // Calculate target position: (P's position - N), wrap if negative
+            let targetPosition = current.acaanCard.pos - current.acaanNumber;
+            if (targetPosition <= 0) {
+                targetPosition += 52;
+            }
+            
+            // Find the card at the target position
+            const targetCard = mnemonica.find(item => item.pos === targetPosition);
+            correctAnswer = targetCard.card;
+            displayAnswer = `${targetCard.card}`;
+        } else {
+            // Regular card from number mode
+            questionType = 'cardFromNumber';
+            questionText = `What card is at position ${current.pos}?`;
+            correctAnswer = current.card;
+            displayAnswer = `${current.card}`;
+        }
     }
     
     // Calculate response time
@@ -541,10 +596,10 @@ function showScoreSummary(elapsed) {
         const slowestList = document.getElementById('slowestList');
         const slowestSection = document.getElementById('slowestAnswers');
         
-        // Check if this is a complement-only session
-        const isComplementSession = sessionResults.every(result => result.questionType === 'positionFromComplement');
+        // Check if this is an ACAAN-only session
+        const isAcaanSession = sessionResults.every(result => result.questionType === 'acaan');
         
-        if (slowestAnswers.length > 1 && !isComplementSession) { // Only show if there are multiple answers to compare and not complement mode
+        if (slowestAnswers.length > 1 && !isAcaanSession) { // Only show if there are multiple answers to compare and not ACAAN mode
             slowestSection.style.display = 'block';
             slowestList.innerHTML = '';
             
