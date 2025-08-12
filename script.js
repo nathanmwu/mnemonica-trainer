@@ -260,16 +260,36 @@ function showPracticeQuestion() {
     
     // Determine question type based on practice mode
     let askForNumber;
+    let isComplement = false;
     if (currentPracticeType === 'numberFromCard') {
         askForNumber = true;
     } else if (currentPracticeType === 'cardFromNumber') {
         askForNumber = false;
+    } else if (currentPracticeType === 'positionFromComplement') {
+        askForNumber = true;
+        isComplement = true;
     } else { // hybrid
-        askForNumber = Math.random() < 0.5;
+        const randomChoice = Math.random();
+        if (randomChoice < 0.33) {
+            askForNumber = true; // numberFromCard
+        } else if (randomChoice < 0.66) {
+            askForNumber = false; // cardFromNumber
+        } else {
+            askForNumber = true; // positionFromComplement
+            isComplement = true;
+        }
     }
     
     if (askForNumber) {
-        question.innerHTML = formatCard(current.card);
+        if (isComplement) {
+            // For complement mode, show a random number and ask for its complement
+            const randomNumber = Math.floor(Math.random() * 51) + 1;
+            question.innerHTML = `<div class="position-number">${randomNumber}</div>`;
+            // Store the random number for answer checking
+            current.complementNumber = randomNumber;
+        } else {
+            question.innerHTML = formatCard(current.card);
+        }
         document.getElementById('numberInput').classList.remove('hidden');
         document.getElementById('cardInput').classList.add('hidden');
         document.getElementById('numberTextInput').focus();
@@ -297,13 +317,23 @@ function submitAnswer() {
     let correctAnswer = '';
     
     if (!document.getElementById('numberInput').classList.contains('hidden')) {
-        // Number guessing mode
-        questionType = 'numberFromCard';
-        questionText = `What position is ${current.card}?`;
+        // Number guessing mode (either numberFromCard or positionFromComplement)
         const inputValue = parseInt(document.getElementById('numberTextInput').value);
         userAnswer = inputValue ? `${inputValue}` : 'No answer';
-        correctAnswer = `${current.pos}`;
-        correct = inputValue === current.pos;
+        
+        if (current.complementNumber) {
+            // Position from complement mode
+            questionType = 'positionFromComplement';
+            questionText = `What is the complement of ${current.complementNumber}?`;
+            correctAnswer = `${52 - current.complementNumber}`;
+            correct = inputValue === (52 - current.complementNumber);
+        } else {
+            // Regular number from card mode
+            questionType = 'numberFromCard';
+            questionText = `What position is ${current.card}?`;
+            correctAnswer = `${current.pos}`;
+            correct = inputValue === current.pos;
+        }
     } else {
         // Card guessing mode
         questionType = 'cardFromNumber';
@@ -369,12 +399,21 @@ function showAnswerAndAdvance() {
     let correctAnswer = '';
     let displayAnswer = '';
     
-    // If number input is visible, user is guessing the position number
+    // If number input is visible, user is guessing a number (either position or complement)
     if (!document.getElementById('numberInput').classList.contains('hidden')) {
-        questionType = 'numberFromCard';
-        questionText = `What position is ${current.card}?`;
-        correctAnswer = `${current.pos}`;
-        displayAnswer = `${current.pos}`;
+        if (current.complementNumber) {
+            // Position from complement mode
+            questionType = 'positionFromComplement';
+            questionText = `What is the complement of ${current.complementNumber}?`;
+            correctAnswer = `${52 - current.complementNumber}`;
+            displayAnswer = `${52 - current.complementNumber}`;
+        } else {
+            // Regular number from card mode
+            questionType = 'numberFromCard';
+            questionText = `What position is ${current.card}?`;
+            correctAnswer = `${current.pos}`;
+            displayAnswer = `${current.pos}`;
+        }
     } else {
         // If card input is visible, user is guessing the card
         questionType = 'cardFromNumber';
@@ -495,7 +534,10 @@ function showScoreSummary(elapsed) {
         const slowestList = document.getElementById('slowestList');
         const slowestSection = document.getElementById('slowestAnswers');
         
-        if (slowestAnswers.length > 1) { // Only show if there are multiple answers to compare
+        // Check if this is a complement-only session
+        const isComplementSession = sessionResults.every(result => result.questionType === 'positionFromComplement');
+        
+        if (slowestAnswers.length > 1 && !isComplementSession) { // Only show if there are multiple answers to compare and not complement mode
             slowestSection.style.display = 'block';
             slowestList.innerHTML = '';
             
